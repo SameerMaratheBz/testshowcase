@@ -10,10 +10,14 @@ const SearchBar: React.FC = () => {
     uniqueIndustries,
     uniqueFormats,
     uniqueFeatures,
-    setAIQuery
+    setAIQuery,
+    selectedFormats
   } = useAdContext();
 
   const [aiPrompt, setAiPrompt] = useState('');
+
+  // Check if we have admin-applied format filters from URL
+  const hasAdminFormatFilters = selectedFormats.length > 0;
 
   const handleAIPromptChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setAiPrompt(e.target.value);
@@ -66,6 +70,25 @@ const SearchBar: React.FC = () => {
 
         <div className="border-b border-gray-200 my-4"></div>
 
+        {/* Show admin-applied format filters if any */}
+        {hasAdminFormatFilters && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-sm font-medium text-blue-800">Applied Format Filters:</span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {selectedFormats.map((format) => (
+                <span 
+                  key={format}
+                  className="inline-block bg-blue-100 text-blue-800 text-sm px-3 py-1 rounded-full font-medium"
+                >
+                  {format}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Filters */}
         <div className="flex gap-4">
           <div className="w-64">
@@ -99,32 +122,34 @@ const SearchBar: React.FC = () => {
           </div>
         </div>
 
-        {/* Format pills */}
-        <div className="flex flex-wrap gap-2">
-          {uniqueFormats.map((format) => (
+        {/* Format pills - only show if no admin format filters are applied */}
+        {!hasAdminFormatFilters && (
+          <div className="flex flex-wrap gap-2">
+            {uniqueFormats.map((format) => (
+              <button
+                key={format}
+                onClick={() => handleFormatClick(format)}
+                className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+                  searchFilters.format === format
+                    ? 'bg-[#4D8400] text-white'
+                    : 'bg-gray-100 text-[#273747] hover:bg-gray-200'
+                }`}
+              >
+                {format}
+              </button>
+            ))}
             <button
-              key={format}
-              onClick={() => handleFormatClick(format)}
+              onClick={() => handleFormatClick('')}
               className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
-                searchFilters.format === format
+                !searchFilters.format
                   ? 'bg-[#4D8400] text-white'
                   : 'bg-gray-100 text-[#273747] hover:bg-gray-200'
               }`}
             >
-              {format}
+              All
             </button>
-          ))}
-          <button
-            onClick={() => handleFormatClick('')}
-            className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
-              !searchFilters.format
-                ? 'bg-[#4D8400] text-white'
-                : 'bg-gray-100 text-[#273747] hover:bg-gray-200'
-            }`}
-          >
-            All
-          </button>
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );
