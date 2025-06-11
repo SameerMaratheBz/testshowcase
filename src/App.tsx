@@ -17,7 +17,8 @@ const AdShowcase: React.FC = () => {
     selectedAd,
     loadMoreAds,
     filteredAds,
-    setSelectedAccounts
+    setSelectedAccounts,
+    setSelectedFormats
   } = useAdContext();
 
   const observerRef = useRef<IntersectionObserver | null>(null);
@@ -32,13 +33,21 @@ const AdShowcase: React.FC = () => {
         const encryptedAccounts = decodeURIComponent(match[1]);
         const accounts = decrypt(encryptedAccounts).split(',');
         setSelectedAccounts(accounts);
+
+        // Check for format filters in query parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const formatsParam = urlParams.get('formats');
+        if (formatsParam) {
+          const formats = decodeURIComponent(formatsParam).split(',');
+          setSelectedFormats(formats);
+        }
       } catch (error) {
         console.error('Failed to decrypt account parameter');
         // Handle invalid URLs gracefully
         window.location.href = '/';
       }
     }
-  }, [setSelectedAccounts]);
+  }, [setSelectedAccounts, setSelectedFormats]);
 
   useEffect(() => {
     const options = {

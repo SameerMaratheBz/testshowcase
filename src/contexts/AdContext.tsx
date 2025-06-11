@@ -22,6 +22,8 @@ interface AdContextProps {
   setAIQuery: (query: string) => void;
   selectedAccounts: string[];
   setSelectedAccounts: (accounts: string[]) => void;
+  selectedFormats: string[];
+  setSelectedFormats: (formats: string[]) => void;
 }
 
 const initialSearchFilters: SearchFilters = {
@@ -50,6 +52,7 @@ export const AdProvider = ({ children }: { children: ReactNode }) => {
   const [visibleCount, setVisibleCount] = useState<number>(ITEMS_PER_PAGE);
   const [aiResults, setAiResults] = useState<Ad[]>([]);
   const [selectedAccounts, setSelectedAccounts] = useState<string[]>([]);
+  const [selectedFormats, setSelectedFormats] = useState<string[]>([]);
 
   const loadAds = async () => {
     try {
@@ -106,6 +109,12 @@ export const AdProvider = ({ children }: { children: ReactNode }) => {
 
       if (!accountMatches) return false;
 
+      // Apply format filtering from URL parameters (admin-generated filters)
+      const urlFormatMatches = selectedFormats.length === 0 || 
+        (ad.format && selectedFormats.includes(ad.format));
+
+      if (!urlFormatMatches) return false;
+
       // Then apply search filters
       const searchFields = [
         ad.account,
@@ -157,7 +166,7 @@ export const AdProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     setVisibleCount(ITEMS_PER_PAGE);
-  }, [searchFilters, sortConfig, aiResults, selectedAccounts]);
+  }, [searchFilters, sortConfig, aiResults, selectedAccounts, selectedFormats]);
 
   const visibleAds = filteredAds.slice(0, visibleCount);
 
@@ -186,6 +195,8 @@ export const AdProvider = ({ children }: { children: ReactNode }) => {
       setAIQuery,
       selectedAccounts,
       setSelectedAccounts,
+      selectedFormats,
+      setSelectedFormats,
     }}>
       {children}
     </AdContext.Provider>

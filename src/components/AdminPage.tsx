@@ -8,21 +8,31 @@ import Header from './Header';
 const AdminPage: React.FC = () => {
   const { ads } = useAdContext();
   const [uniqueAccounts, setUniqueAccounts] = useState<string[]>([]);
+  const [uniqueFormats, setUniqueFormats] = useState<string[]>([]);
   const [selectedAccounts, setSelectedAccounts] = useState<string[]>([]);
+  const [selectedFormats, setSelectedFormats] = useState<string[]>([]);
   const [shareableUrl, setShareableUrl] = useState<string>('');
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [isAccountDropdownOpen, setIsAccountDropdownOpen] = useState(false);
+  const [isFormatDropdownOpen, setIsFormatDropdownOpen] = useState(false);
+  const [accountSearchTerm, setAccountSearchTerm] = useState('');
+  const [formatSearchTerm, setFormatSearchTerm] = useState('');
   const accountDropdownRef = useRef<HTMLDivElement>(null);
+  const formatDropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const accounts = ['all', ...new Set(ads.map(ad => ad.account))].filter(Boolean).sort();
+    const formats = [...new Set(ads.map(ad => ad.format))].filter(Boolean).sort();
     setUniqueAccounts(accounts);
+    setUniqueFormats(formats);
   }, [ads]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (accountDropdownRef.current && !accountDropdownRef.current.contains(event.target as Node)) {
-        setIsDropdownOpen(false);
+        setIsAccountDropdownOpen(false);
+      }
+      if (formatDropdownRef.current && !formatDropdownRef.current.contains(event.target as Node)) {
+        setIsFormatDropdownOpen(false);
       }
     };
 
@@ -47,6 +57,16 @@ const AdminPage: React.FC = () => {
     });
   };
 
+  const handleFormatToggle = (format: string) => {
+    setSelectedFormats(prev => {
+      if (prev.includes(format)) {
+        return prev.filter(f => f !== format);
+      } else {
+        return [...prev, format];
+      }
+    });
+  };
+
   const generateShareableUrl = () => {
     if (selectedAccounts.length === 0) {
       toast.error('Please select at least one account');
@@ -56,7 +76,15 @@ const AdminPage: React.FC = () => {
     const baseUrl = window.location.origin;
     const encryptedParams = encrypt(selectedAccounts.join(','));
     const encodedParams = encodeURIComponent(encryptedParams);
-    const url = `${baseUrl}/showcase/${encodedParams}`;
+    
+    let url = `${baseUrl}/showcase/${encodedParams}`;
+    
+    // Add format filter as query parameter if formats are selected
+    if (selectedFormats.length > 0) {
+      const formatParams = selectedFormats.join(',');
+      url += `?formats=${encodeURIComponent(formatParams)}`;
+    }
+    
     setShareableUrl(url);
   };
 
@@ -70,15 +98,23 @@ const AdminPage: React.FC = () => {
   };
 
   const filteredAccounts = uniqueAccounts.filter(account => 
-    account.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (account === 'all' && searchTerm.toLowerCase().includes('all'))
+    account.toLowerCase().includes(accountSearchTerm.toLowerCase()) ||
+    (account === 'all' && accountSearchTerm.toLowerCase().includes('all'))
+  );
+
+  const filteredFormats = uniqueFormats.filter(format => 
+    format.toLowerCase().includes(formatSearchTerm.toLowerCase())
   );
 
   const getFilteredAdsCount = () => {
     return ads.filter(ad => {
       const accountMatches = selectedAccounts.includes('all') || 
         (ad.account && selectedAccounts.includes(ad.account));
-      return accountMatches;
+      
+      const formatMatches = selectedFormats.length === 0 || 
+        (ad.format && selectedFormats.includes(ad.format));
+      
+      return accountMatches && formatMatches;
     }).length;
   };
 
@@ -100,7 +136,7 @@ const AdminPage: React.FC = () => {
                 </label>
                 <div className="relative">
                   <button
-                    onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                    onClick={() => setIsAccountDropdownOpen(!isAccountDropdownOpen)}
                     className="w-full p-2 border border-gray-300 rounded-md bg-white text-left flex justify-between items-center"
                   >
                     <span className="truncate">
@@ -113,7 +149,7 @@ const AdminPage: React.FC = () => {
                     <span className="ml-2">▼</span>
                   </button>
 
-                  {isDropdownOpen && (
+                  {isAccountDropdownOpen && (
                     <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg">
                       <div className="p-2 border-b">
                         <div className="relative">
@@ -121,8 +157,8 @@ const AdminPage: React.FC = () => {
                           <input
                             type="text"
                             placeholder="Search accounts..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
+                            value={accountSearchTerm}
+                            onChange={(e) => setAccountSearchTerm(e.target.value)}
                             className="w-full pl-8 pr-3 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#4d8400] focus:border-transparent text-sm"
                             onClick={(e) => e.stopPropagation()}
                           />
@@ -154,10 +190,107 @@ const AdminPage: React.FC = () => {
                 </div>
               </div>
 
+              {/* Format Selection */}
+              <div className="relative" ref={formatDropdownRef}>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Select Formats (Optional)
+                </label>
+                <div className="relative">
+                  <button
+                    onClick={() => setIsFormatDropdownOpen(!isFormatDropdownOpen)}
+                    className="w-full p-2 border border-gray-300 rounded-md bg-white text-left flex justify-between items-center"
+                  >
+                    <span className="truncate">
+                      {selectedFormats.length === 0 
+                        ? 'All formats (no filter)'
+                        : `${selectedFormats.length} format(s) selected`}
+                    </span>
+                    <span className="ml-2">▼</span>
+                  </button>
+
+                  {isFormatDropdownOpen && (
+                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg">
+                      <div className="p-2 border-b">
+                        <div className="relative">
+                          <Search size={16} className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                          <input
+                            type="text"
+                            placeholder="Search formats..."
+                            value={formatSearchTerm}
+                            onChange={(e) => setFormatSearchTerm(e.target.value)}
+                            className="w-full pl-8 pr-3 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#4d8400] focus:border-transparent text-sm"
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                        </div>
+                      </div>
+                      <div className="max-h-48 overflow-auto">
+                        <div className="px-4 py-2 border-b bg-gray-50">
+                          <button
+                            onClick={() => setSelectedFormats([])}
+                            className="text-sm text-[#4d8400] hover:text-[#3d6a00]"
+                          >
+                            Clear all formats
+                          </button>
+                        </div>
+                        {filteredFormats.map((format) => (
+                          <div
+                            key={format}
+                            className="flex items-center px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                            onClick={() => handleFormatToggle(format)}
+                          >
+                            <div className="w-5 h-5 border border-gray-300 rounded mr-3 flex items-center justify-center">
+                              {selectedFormats.includes(format) && (
+                                <Check size={16} className="text-[#4d8400]" />
+                              )}
+                            </div>
+                            <span>{format}</span>
+                          </div>
+                        ))}
+                        {filteredFormats.length === 0 && (
+                          <div className="px-4 py-2 text-gray-500 text-sm">
+                            No formats found
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Selected formats display */}
+              {selectedFormats.length > 0 && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Selected Formats:
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedFormats.map((format) => (
+                      <span 
+                        key={format}
+                        className="inline-flex items-center gap-1 bg-[#4d8400]/10 text-[#4d8400] text-sm px-3 py-1 rounded-full"
+                      >
+                        {format}
+                        <button
+                          onClick={() => handleFormatToggle(format)}
+                          className="ml-1 hover:text-[#3d6a00]"
+                        >
+                          ×
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Preview count */}
               {selectedAccounts.length > 0 && (
                 <div className="text-sm text-gray-600">
                   Selected ads: {getFilteredAdsCount()}
+                  {selectedFormats.length > 0 && (
+                    <span className="ml-2 text-[#4d8400]">
+                      (filtered by {selectedFormats.length} format{selectedFormats.length !== 1 ? 's' : ''})
+                    </span>
+                  )}
                 </div>
               )}
 
@@ -187,19 +320,23 @@ const AdminPage: React.FC = () => {
                 <ul className="space-y-2 text-gray-600">
                   <li className="flex items-start gap-2">
                     <CheckCircle size={18} className="text-[#4d8400] mt-1" />
-                    <span>Use the search box to quickly find specific accounts</span>
+                    <span>Use the search boxes to quickly find specific accounts and formats</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <CheckCircle size={18} className="text-[#4d8400] mt-1" />
-                    <span>Check multiple accounts to include them in the showcase</span>
+                    <span>Select accounts to include in the showcase (required)</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <CheckCircle size={18} className="text-[#4d8400] mt-1" />
-                    <span>Select "All" to include all accounts</span>
+                    <span>Optionally select specific formats to filter the showcase</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <CheckCircle size={18} className="text-[#4d8400] mt-1" />
-                    <span>Click "Generate Shareable URL" to create a unique link</span>
+                    <span>Select "All Accounts" to include all accounts</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <CheckCircle size={18} className="text-[#4d8400] mt-1" />
+                    <span>Click "Generate Shareable URL" to create a unique filtered link</span>
                   </li>
                 </ul>
               </div>
