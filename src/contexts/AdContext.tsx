@@ -137,7 +137,8 @@ export const AdProvider = ({ children }: { children: ReactNode }) => {
         ? ad.industry === searchFilters.industry
         : true;
       
-      const matchesFormat = searchFilters.format 
+      // For user-selected format filter, only apply if no admin format filters are active
+      const matchesFormat = searchFilters.format && selectedFormats.length === 0
         ? ad.format === searchFilters.format
         : true;
       

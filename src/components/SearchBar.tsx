@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAdContext } from '../contexts/AdContext';
 import { Sparkles, Share2, Copy, Check } from 'lucide-react';
 import { SortField } from '../types';
@@ -24,6 +24,15 @@ const SearchBar: React.FC = () => {
 
   // Check if we have admin-applied format filters from URL
   const hasAdminFormatFilters = selectedFormats.length > 0;
+
+  // Set AI prompt from URL parameter on component mount
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const aiQueryParam = urlParams.get('ai_query');
+    if (aiQueryParam) {
+      setAiPrompt(decodeURIComponent(aiQueryParam));
+    }
+  }, []);
 
   const handleAIPromptChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setAiPrompt(e.target.value);

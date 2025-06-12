@@ -42,7 +42,7 @@ const AdShowcase: React.FC = () => {
         // Format filters
         const formatsParam = urlParams.get('formats');
         if (formatsParam) {
-          const formats = decodeURIComponent(formatsParam).split(',');
+          const formats = decodeURIComponent(formatsParam).split(',').filter(Boolean);
           setSelectedFormats(formats);
         }
         
@@ -61,7 +61,10 @@ const AdShowcase: React.FC = () => {
         // AI query
         const aiQueryParam = urlParams.get('ai_query');
         if (aiQueryParam) {
-          setAIQuery(decodeURIComponent(aiQueryParam));
+          // Use setTimeout to ensure the component is fully mounted before triggering AI search
+          setTimeout(() => {
+            setAIQuery(decodeURIComponent(aiQueryParam));
+          }, 100);
         }
         
       } catch (error) {
