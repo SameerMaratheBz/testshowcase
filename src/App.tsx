@@ -18,7 +18,9 @@ const AdShowcase: React.FC = () => {
     loadMoreAds,
     filteredAds,
     setSelectedAccounts,
-    setSelectedFormats
+    setSelectedFormats,
+    setSearchFilters,
+    setAIQuery
   } = useAdContext();
 
   const observerRef = useRef<IntersectionObserver | null>(null);
@@ -34,20 +36,41 @@ const AdShowcase: React.FC = () => {
         const accounts = decrypt(encryptedAccounts).split(',');
         setSelectedAccounts(accounts);
 
-        // Check for format filters in query parameters
+        // Check for filters in query parameters
         const urlParams = new URLSearchParams(window.location.search);
+        
+        // Format filters
         const formatsParam = urlParams.get('formats');
         if (formatsParam) {
           const formats = decodeURIComponent(formatsParam).split(',');
           setSelectedFormats(formats);
         }
+        
+        // Industry filter
+        const industryParam = urlParams.get('industry');
+        if (industryParam) {
+          setSearchFilters(prev => ({ ...prev, industry: decodeURIComponent(industryParam) }));
+        }
+        
+        // Features filter
+        const featuresParam = urlParams.get('features');
+        if (featuresParam) {
+          setSearchFilters(prev => ({ ...prev, features: decodeURIComponent(featuresParam) }));
+        }
+        
+        // AI query
+        const aiQueryParam = urlParams.get('ai_query');
+        if (aiQueryParam) {
+          setAIQuery(decodeURIComponent(aiQueryParam));
+        }
+        
       } catch (error) {
         console.error('Failed to decrypt account parameter');
         // Handle invalid URLs gracefully
         window.location.href = '/';
       }
     }
-  }, [setSelectedAccounts, setSelectedFormats]);
+  }, [setSelectedAccounts, setSelectedFormats, setSearchFilters, setAIQuery]);
 
   useEffect(() => {
     const options = {
